@@ -1,0 +1,18 @@
+namespace: heilerich
+name: maas
+version: 1.0.0
+readme: README.md
+authors:
+- Felix Heilmeyer <code@fehe.eu>
+description: A collection of ansible plugins and roles for automating MAAS.io
+license:
+- "MIT"
+tags: ["maas", "metal-as-a-service"]
+dependencies: {}
+repository: https://github.com/heilerich/ansible_maas
+# TODO
+documentation: http://docs.example.com
+homepage: http://example.com
+issues: http://example.com/issue/tracker
+build_ignore: ["scripts/*"]
+

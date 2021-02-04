@@ -1,0 +1,56 @@
+- name: Deploy machine in MAAS
+  delegate_to: localhost
+  heilerich.maas.deploy:
+    system_id: "{{ maas_id }}"
+    wait: True
+    user_data: "{{ machine_user_data }}"
+
+- name: SSH Keyscan
+  import_tasks: keyscan.yml
+
+- name: Wait for host to become available
+  ansible.builtin.wait_for_connection:
+    timeout: 900
+
+- name: Gather facts
+  setup:
+
+- name: Ensure LXD snap
+  community.general.snap:
+    name: lxd
+    state: present
+    channel: "{{ lxd_snap_channel }}"
+
+- name: Get current LXD configuration
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxd init --dump"
+  register: lxd_init_pre_dump
+  changed_when: False
+
+- name: Configure LXD
+  vars:
+    preseed: "{{ lookup('template', lookup('vars', 'lxd_preseed_file', default='lxd_preseed.yml.j2')) }}"
+  ansible.builtin.shell:
+    cmd: "/snap/bin/lxd init --preseed && /snap/bin/lxd init --dump"
+    stdin: "{{ preseed }}"
+  register: lxd_init_post_dump
+  changed_when: "(lxd_init_post_dump.stdout|from_yaml|to_json) != (lxd_init_pre_dump.stdout|from_yaml|to_json)"
+
+- name: Check if trust password is unset or save to override
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc query /1.0"
+  register: lxd_config_dump
+  changed_when: False
+  failed_when: "(lxd_config_dump.stdout|from_json)['config']['core.trust_password']|default(False) and not lxd_override_trust_password"
+
+- name: Generate new LXD trust password
+  ansible.builtin.set_fact:
+    lxd_trust_password: "{{ lookup('password', '/dev/null') }}"
+
+- name: Set LXD trust password
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc config set core.trust_password '{{ lxd_trust_password }}'"
+
+- name: Unset LXD trust password
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc config unset core.trust_password"

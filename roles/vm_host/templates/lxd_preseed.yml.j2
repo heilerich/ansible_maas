@@ -1,0 +1,23 @@
+config:
+  core.https_address: '[::]:{{ lxd_listen_port }}'
+networks: []
+storage_pools:
+- config: {}
+  description: ""
+  name: local
+  driver: dir
+profiles:
+- config: {}
+  description: ""
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: {{ lxd_bridge_interface }}
+      type: nic
+    root:
+      path: /
+      pool: local
+      type: disk
+  name: default
+cluster: null

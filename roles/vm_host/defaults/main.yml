@@ -1,0 +1,25 @@
+machine_user_data: |
+  #cloud-config
+  package_upgrade: true
+  ssh_pwauth: no
+
+# Set machine FQDN used in MAAS to connect to the LXD API
+# If none, uses ansible_host
+# machine_fqdn: vm_host.example.com
+
+lxd_snap_channel: "latest/stable"
+lxd_listen_port: "8443"
+lxd_bridge_interface: "br0"
+
+# The role will generate a random trust password for MAAS to register
+# with the LXD API and then removes that password. If LXD has already
+# been configured with a password, the deployment fails unless you
+# set lxd_override_trust_password to true. In that case the existing
+# password will be overriden and then removed.
+lxd_override_trust_password: false
+
+# LXD will be initialised with dir storage at the default location.
+# If you want to use custom settings you can provide a custom preseed
+# with the lxd_preseed_file variable. Please make sure to include the
+# port variable, otherwise setting up the connection to MAAS will fail.
+# lxd_preseed_file: mycustomseed.yml.j2
