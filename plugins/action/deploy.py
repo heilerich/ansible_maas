@@ -64,7 +64,7 @@ class ActionModule(ActionBase):
             wait = self._task.args.get('wait', False),
             wait_interval = int(self._task.args.get('wait_interval', 5)),
             install_kvm = self._task.args.get('install_kvm', False),
-            maas_url = self._task.args.get('maas_url', None),
+            maas_url = self._task.args.get('maas_url', 'http://localhost:5240/MAAS/'),
             api_key = self._task.args.get('api_key', None),
             username = self._task.args.get('username', None),
             password = self._task.args.get('password', None)

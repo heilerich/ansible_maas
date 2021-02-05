@@ -29,9 +29,6 @@ DOCUMENTATION = '''
     author:
       - Felix Heilmeyer <code@fehe.eu>
     short_description: Ansible dynamic inventory plugin for MAAS. 
-    requirements:
-        - python >= 2.7
-        - L(python-libmaas,https://maas.github.io/python-libmaas/) >= 0.6.6
     extends_documentation_fragment:
         - heilerich.maas.connection
         - constructed

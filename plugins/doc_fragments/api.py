@@ -29,7 +29,7 @@ class ModuleDocFragment(object):
     DOCUMENTATION = r'''
 requirements:
     - python >= 2.7
-    - L(python-libmaas,https://maas.github.io/python-libmaas/) >= 0.6.6
+    - L(requests-oauthlib,https://pypi.org/project/requests-oauthlib/) >= 1.3.0
 options:
     maas_url:
         description: URL pointing to the API of the controller
@@ -38,15 +38,6 @@ options:
         default: "http://localhost:5240/MAAS/"
     api_key:
         description: API key obtained from (/MAAS/account/prefs/). Alternatively specify username and password.
-        type: str
-        required: false
-    username:
-        description: Username for logging into MAAS
-        type: str
-        required: false
-        alias: [ user ]
-    password:
-        description: Password for logging into MAAS
         type: str
         required: false
 '''
