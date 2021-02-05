@@ -23,3 +23,7 @@ lxd_override_trust_password: false
 # with the lxd_preseed_file variable. Please make sure to include the
 # port variable, otherwise setting up the connection to MAAS will fail.
 # lxd_preseed_file: mycustomseed.yml.j2
+
+# The resource pool and zone to add the new vm host to
+vm_host_pool: "default"
+vm_host_zone: "default"

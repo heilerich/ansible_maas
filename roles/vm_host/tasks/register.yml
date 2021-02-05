@@ -1,0 +1,34 @@
+- name: Check if trust password is unset or save to override
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc query /1.0"
+  register: lxd_config_dump
+  changed_when: False
+  failed_when: "(lxd_config_dump.stdout|from_json)['config']['core.trust_password']|default(False) and not lxd_override_trust_password"
+
+- name: Generate new LXD trust password
+  ansible.builtin.set_fact:
+    lxd_trust_password: "{{ lookup('password', '/dev/null') }}"
+
+- name: Set LXD trust password
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc config set core.trust_password ''{{ lxd_trust_password }}''"
+
+- name: Give LXD time to apply changes
+  ansible.builtin.wait_for:
+    timeout: 10
+
+- name: Register VM host with MAAS
+  heilerich.maas.api_call:
+    endpoint: "pods/"
+    method: "POST"
+    parameters:
+      type: "lxd"
+      name: "{{ inventory_hostname }}"
+      pool: "{{ vm_host_pool }}"
+      zone: "{{ vm_host_zone }}"
+      power_pass: "{{ lxd_trust_password }}"
+      power_address: "https://{{ ansible_default_ipv4.address }}:{{ lxd_listen_port }}"
+
+- name: Unset LXD trust password
+  ansible.builtin.command:
+    cmd: "/snap/bin/lxc config unset core.trust_password"
