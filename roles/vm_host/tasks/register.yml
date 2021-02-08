@@ -7,7 +7,7 @@
 
 - name: Generate new LXD trust password
   ansible.builtin.set_fact:
-    lxd_trust_password: "{{ lookup('password', '/dev/null') }}"
+    lxd_trust_password: "{{ lookup('password', '/dev/null chars=ascii_letters length=20') }}"
 
 - name: Set LXD trust password
   ansible.builtin.command:
@@ -26,7 +26,7 @@
       name: "{{ inventory_hostname }}"
       pool: "{{ vm_host_pool }}"
       zone: "{{ vm_host_zone }}"
-      power_pass: "{{ lxd_trust_password }}"
+      password: "{{ lxd_trust_password }}"
       power_address: "https://{{ ansible_default_ipv4.address }}:{{ lxd_listen_port }}"
 
 - name: Unset LXD trust password

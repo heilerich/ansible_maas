@@ -3,10 +3,18 @@
   heilerich.maas.deploy:
     system_id: "{{ maas_id }}"
     wait: True
+    wait_interval: "{{ deployment_poll_interval }}"
+    wait_timeout: "{{ deployment_wait_interval }}"
     user_data: "{{ machine_user_data }}"
+  register: deployment_result
+
+- name: Update IP addresses
+  set_fact:
+    ansible_host: "{{ deployment_result.machine.ip_addresses[0] }}"
 
 - name: SSH Keyscan
   import_tasks: keyscan.yml
+  when: update_ssh_host_key
 
 - name: Wait for host to become available
   ansible.builtin.wait_for_connection:
