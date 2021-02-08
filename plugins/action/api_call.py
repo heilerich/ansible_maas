@@ -67,27 +67,18 @@ class ActionModule(ActionBase):
             api_key = self._task.args.get('api_key', None)
         )
 
-        def decode(response):
-            text = to_native(response.text)
-            try:
-                return json.loads(text)
-            except Exception as e:
-                display.vvv('Exception decoding JSON: %s' % to_native(e))
-                return text
-
         def call():
             response = session.call(config.method, config.endpoint, config.parameters)
-            response_data = decode(response)
             
             self.result.update(dict(
                 status_code = response.status_code,
-                data = response_data,
+                data = response.data,
                 success = response.ok
             ))
             
             return response
         def return_if_okay():
-            if not response.ok and fail_on_error:
+            if not response.ok and config.fail_on_error:
                 return self._error('API returned an error status code')
             else:
                 return self.result
@@ -105,11 +96,10 @@ class ActionModule(ActionBase):
                 
             if config.method != 'GET':
                 pre_check_response = session.call('GET', config.endpoint)
-                pre_check_data = decode(pre_check_response)
 
             response = call()
             if response.ok and config.method != 'GET':
-                self.result['changed'] = self.result['data'] != pre_check_data
+                self.result['changed'] = self.result['data'] != pre_check_response.data
 
             return_if_okay()
 

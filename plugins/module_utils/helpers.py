@@ -32,13 +32,3 @@ class AttrDict(dict):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
-def cleanup():
-    # Asyncio is incompatible with some forking stuff ansible does.
-    # This is needed to cleanup after using the libmaas package.
-    loop = asyncio.get_event_loop()
-    loop.stop()
-    loop.close()
-    asyncio.set_event_loop(None)
-    policy = asyncio.get_event_loop_policy()
-    policy._local._loop = None
-    policy._local._set_called = None

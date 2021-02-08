@@ -30,7 +30,7 @@ DOCUMENTATION = '''
       - Felix Heilmeyer <code@fehe.eu>
     short_description: Ansible dynamic inventory plugin for MAAS. 
     extends_documentation_fragment:
-        - heilerich.maas.connection
+        - heilerich.maas.api
         - constructed
         - inventory_cache
     description:
@@ -80,8 +80,8 @@ from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_native
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
 from ansible.utils.display import Display
-from ansible_collections.heilerich.maas.plugins.module_utils.connection import get_client
-from ansible_collections.heilerich.maas.plugins.module_utils.helpers import AttrDict, cleanup
+from ansible_collections.heilerich.maas.plugins.module_utils.api import APISession
+from ansible_collections.heilerich.maas.plugins.module_utils.helpers import AttrDict
 
 
 display = Display()
@@ -91,17 +91,17 @@ class Host(object):
     @classmethod
     def from_machine(cls, maas_machine):
         data = dict(
-            name = to_native(maas_machine.fqdn),
-            status = to_native(maas_machine.status.name.lower()),
-            maas_id = to_native(maas_machine.system_id),
-            zone = 'zone_%s' % to_native(maas_machine.zone.name),
-            domain = 'domain_%s' % to_native(maas_machine.domain.name),
-            pool = 'pool_%s' % to_native(maas_machine.pool.name),
-            tags = [t.name for t in maas_machine.tags],
-            maas_data = maas_machine._orig_data
+            name = to_native(maas_machine['fqdn']),
+            status = to_native(maas_machine['status_name'].lower()),
+            maas_id = to_native(maas_machine['system_id']),
+            zone = 'zone_%s' % to_native(maas_machine['zone']['name']),
+            domain = 'domain_%s' % to_native(maas_machine['domain']['name']),
+            pool = 'pool_%s' % to_native(maas_machine['pool']['name']),
+            tags = [to_native(t) for t in maas_machine['tag_names']],
+            maas_data = maas_machine
         )
         data['metal'] = 'virtual' not in data['tags']
-        data['host'] = to_native(maas_machine.ip_addresses[0] if len(maas_machine.ip_addresses)>0 else data['name'])
+        data['host'] = to_native(maas_machine['ip_addresses'][0] if len(maas_machine['ip_addresses'])>0 else data['name'])
 
         return cls(data)
     
@@ -139,8 +139,9 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
     def _fetch(self):
         display.vvv(u'Fetching data from MAAS API')
         try:
-            client = get_client(self._config) 
-            return [Host.from_machine(m) for m in client.machines.list()]
+            session = APISession(self._config.maas_url, self._config.api_key)
+            machines = session.call('GET', 'machines/')
+            return [Host.from_machine(m) for m in machines.data]
         except Exception as e:
             raise AnsibleError('Unable to fetch data from the MAAS API, this was the original exception: %s' %
                                to_native(e))
@@ -187,8 +188,6 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         self._config = AttrDict(
             maas_url=self.get_option('maas_url'),
             api_key=self.get_option('api_key'),
-            username=self.get_option('username'),
-            password=self.get_option('password'),
             include_vms=self.get_option('include_vms'),
             debug=None,
         )
@@ -215,6 +214,4 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             self._cache[cache_key] = cache_data
 
         self._populate(results)
-
-        cleanup()
 

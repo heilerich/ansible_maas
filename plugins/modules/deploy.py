@@ -35,7 +35,7 @@ description:
     - Acquires the machine as the logged in MAAS user
     - Deploys the OS with the provided parameters
 extends_documentation_fragment:
-    - heilerich.maas.connection
+    - heilerich.maas.api
 options:
     system_id:
         description: ID of the system in MAAS (visible in the URL).
@@ -59,9 +59,14 @@ options:
         type: bool
         default: no
     wait_interval:
-        description: How often to poll, defaults to 5 seconds.§
+        description: How often to poll, defaults to 5 seconds.
         type: int
         default: 5
+    wait_timeout:
+        description: "How long to wait for the deployment to finish. Defaults
+            to 600 seconds."
+        type: int
+        default: 600
     install_kvm:
         description: Prepare and register the machine for use as a KVM based virtual machine host in MAAS.
         type: bool

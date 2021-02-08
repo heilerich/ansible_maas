@@ -24,10 +24,12 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-
+import json
 from requests_oauthlib import OAuth1Session
 from six.moves import urllib
 from ansible.utils.display import Display
+from ansible.module_utils._text import to_native
+
 
 display = Display()
 urlparse, urljoin = urllib.parse.urlparse, urllib.parse.urljoin
@@ -46,6 +48,14 @@ class APISession():
         self.api_base = urljoin(self.base_url, '/MAAS/api/%s/' % api_version)
         self.headers = {'Accept': 'application/json'}
 
+    def decode(self, response):
+        text = to_native(response.text)
+        try:
+            return json.loads(text)
+        except Exception as e:
+            display.vvv('Exception decoding JSON: %s' % to_native(e))
+            return text
+
     def call(self, method, endpoint, params={}):
         if method == 'GET':
             http = self.session.get
@@ -62,7 +72,8 @@ class APISession():
             url = urljoin(self.api_base, endpoint)
             resp = http(url, json = params, headers=self.headers)
             display.vvv('Called %s: (%s) %s' % (endpoint, resp.status_code, resp.content))
+            resp.data = self.decode(resp)
             return resp
         except Exception as e:
-            return APIError('Exception occured while trying to call MAAS api. The original exception was: %s' % e)
+            raise APIError('Exception occured while trying to call MAAS api. The original exception was: %s' % e)
 
