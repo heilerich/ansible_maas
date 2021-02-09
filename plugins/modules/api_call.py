@@ -38,7 +38,7 @@ description:
     - There are no checks and failsafes here, proceed with caution.
     - For more information please refer to the L(API Documentation,https://maas.io/docs/api)
 extends_documentation_fragment:
-    - heilerich.maas.connection
+    - heilerich.maas.api
 options:
     endpoint:
         description: "The URL of the endpoint to call relative to the API Base, e.g. I(endpoint='account/').
