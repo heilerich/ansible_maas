@@ -15,20 +15,6 @@ update_ssh_host_key: false
 known_hosts_file: "~/.ssh/known_hosts"
 known_hosts_hash_host: false
 
-# You have to options when deploying the hosts regarding the SSH host
-# keys. 
-# (1) You let ansible generate host keys on the controller, 
-# install the private keys with the user data when deployin and then
-# install the public keys on the controller. This is the default 
-# behaviour and requires that you trust your controller with the host
-# keys.
-# (2) You let the deployed host generate new host keys for itself and
-# then install the public keys on the controller using ssh-keyscan after
-# deployment. In this case the host keys never leave the host, but
-# you are potentially vulnerable to a MITM attack when scanning the
-# new host keys for the first time.
-generate_ssh_keys_on_host: false
-
 # Set machine FQDN used in MAAS to connect to the LXD API
 # If none, uses ansible_host
 # machine_fqdn: vm_host.example.com

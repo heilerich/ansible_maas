@@ -11,10 +11,11 @@
 - name: Update IP addresses
   set_fact:
     ansible_host: "{{ deployment_result.machine.ip_addresses[0] }}"
+  when: "deployment_result.changed"
 
 - name: SSH Keyscan
-  import_tasks: keyscan.yml
-  when: update_ssh_host_key
+  include_tasks: keyscan.yml
+  when: "update_ssh_host_key and deployment_result.changed"
 
 - name: Wait for host to become available
   ansible.builtin.wait_for_connection:

@@ -1,23 +1,20 @@
-- name: Get host addresses
-  delegate_to: localhost
-  ansible.builtin.set_fact:
-    ssh_hostlist: "{{ (hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | map(attribute='value') | map(attribute='inventory_hostname')) + (hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | map(attribute='value') | map(attribute='ansible_host')) }}"
-
 - name: Scan host keys
   delegate_to: localhost
-  run_once: yes
   ansible.builtin.command:
     cmd: "xargs -n1 ssh-keyscan 2> /dev/null"
-    stdin: "{{ ssh_hostlist | join(' ') }}"
+    stdin: "{{ inventory_hostname }} {{ ansible_host }}"
   register: keyscan_output
-  when: "new_ssh_host_keys is not defined"
 
 - name: Register scanned keys as fact
   delegate_to: localhost
+  ansible.builtin.set_fact:
+    host_keys: "{{ keyscan_output.stdout_lines }}"
+
+- name: Gather all keys
+  delegate_to: localhost
   run_once: yes
   ansible.builtin.set_fact:
-    new_ssh_host_keys: "{{ keyscan_output.stdout_lines }}"
-  when: "new_ssh_host_keys is not defined"
+    new_ssh_host_keys: "{{ hostvars | dict2items | selectattr('key', 'in', ansible_play_hosts) | map(attribute='value') | map(attribute='host_keys') | flatten }}"
 
 - name: Remove old host keys on controller
   delegate_to: localhost
