@@ -76,6 +76,7 @@ compose:
 
 '''
 
+import re
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_native
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
@@ -121,8 +122,9 @@ class Host(object):
         inventory.add_host(self.name)
         
         for group in self.groups():
-            inventory.add_group(group)
-            inventory.add_host(self.name, group)
+            groupname = re.sub('[\.-]', '_', group)
+            inventory.add_group(groupname)
+            inventory.add_host(self.name, groupname)
         
         inventory.set_variable(self.name, 'ansible_host', self.host)
         inventory.set_variable(self.name, 'maas_id', self.maas_id)
