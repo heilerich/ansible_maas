@@ -42,7 +42,8 @@ options:
         type: str
         required: true
     user_data:
-        description: User-data to provide to the machine when booting.
+        description: "User-data to provide to the machine when booting. Must be a base64
+            encoded string."
         type: str
     distro_series:
         description: "The OS to deploy. If no value is set the default value according

@@ -42,6 +42,7 @@ class APISession():
     def __init__(self, maas_url, api_key, api_version = '2.0'):
         client_key, token, token_secret = api_key.split(':')
         self.session = OAuth1Session(client_key=client_key, 
+                                     signature_method='PLAINTEXT',
                                      resource_owner_key=token,
                                      resource_owner_secret=token_secret)
         self.base_url = urljoin(maas_url, '../')
@@ -70,7 +71,9 @@ class APISession():
 
         try:
             url = urljoin(self.api_base, endpoint)
-            resp = http(url, json = params, headers=self.headers)
+            # MAAS expects multipart/form-data and doesn't like filenames
+            file_params = {k: ('', v) for k, v in params.items()}
+            resp = http(url, files=file_params, headers=self.headers)
             display.vvv('Called %s: (%s) %s' % (endpoint, resp.status_code, resp.content))
             resp.data = self.decode(resp)
             return resp

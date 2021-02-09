@@ -5,7 +5,7 @@
     wait: True
     wait_interval: "{{ deployment_poll_interval }}"
     wait_timeout: "{{ deployment_wait_interval }}"
-    user_data: "{{ machine_user_data }}"
+    user_data: "{{ machine_user_data | b64encode }}"
   register: deployment_result
 
 - name: Update IP addresses

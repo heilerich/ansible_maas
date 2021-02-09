@@ -108,7 +108,6 @@ class ActionModule(ActionBase):
                 distro_series = config.distro_series,
                 hwe_kernel = config.hwe_kernel,
                 comment = config.comment,
-                wait_interval = config.wait_interval,
                 install_kvm = config.install_kvm
             ))
 
