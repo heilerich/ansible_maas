@@ -74,7 +74,7 @@ class APISession():
             # MAAS expects multipart/form-data and doesn't like filenames
             file_params = {k: ('', v) for k, v in params.items()}
             resp = http(url, files=file_params, headers=self.headers)
-            display.vvv('Called %s: (%s) %s' % (endpoint, resp.status_code, resp.content))
+            display.vvvv('Called %s: (%s) %s' % (endpoint, resp.status_code, resp.content))
             resp.data = self.decode(resp)
             return resp
         except Exception as e:

@@ -29,11 +29,10 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: heilerich.maas.deploy
-short_description: Acquires and deploys a machine in MAAS
+short_description: Waits for a machine
 description:
-    - Gets machine information for the machine with the provided system_id
-    - Acquires the machine as the logged in MAAS user
-    - Deploys the OS with the provided parameters
+    - Waits for a machine to change it's status to the desired value.
+    - The API is polled in the defined interval to determine the status.
 extends_documentation_fragment:
     - heilerich.maas.api
     - heilerich.maas.wait
@@ -42,48 +41,31 @@ options:
         description: ID of the system in MAAS (visible in the URL).
         type: str
         required: true
-    user_data:
-        description: "User-data to provide to the machine when booting. Must be a base64
-            encoded string."
+    target:
+        description: The desired machine status (e.g. 'ready')
         type: str
-    distro_series:
-        description: "The OS to deploy. If no value is set the default value according
-            to the MAAS settings is used."
-        type: str
-    hwe_kernel:
-        description: The HWE kernel to deploy. Probably only relevant when deploying Ubuntu.
-        type: str
-    comment:
-        description: A comment for the event log.
-        type: str
-    wait:
-        description: If true, wait until the deploy is complete.
-        type: bool
-        default: no
-    install_kvm:
-        description: Prepare and register the machine for use as a KVM based virtual machine host in MAAS.
-        type: bool
-        default: no
+        required: true
+    acceptable_status:
+        description: "List of acceptable status (e.g. ['comissioning']). If the machine status changes to a status that is neither the target nor in acceptable_status the task will fail"
+        type: list
+        required: true
 author:
 - Felix Heilmeyer <code@fehe.eu>
 '''
 
 EXAMPLES = r'''
-# Deploy a system, wait for it to become ready, gather facts and continue 
+# Wait for a system to reach the ready state after comissioning
 - hosts: all
   gather_facts: no
   tasks:
-  - name: Deploy machine
-    heilerich.maas.deploy:
+  - name: Wait for the machine to be ready
+    heilerich.maas.wait:
       system_id: '{{ maas_id }}'
-      wait: yes
-      user_data: "{{ lookup('template', './cloud_init.yaml.j2') }}"
+      target: 'ready'
+      acceptable_status: ['commissioning']
+      wait_interval: 10
+      wait_timeout: 900
     delegate_to: localhost
-  - name: Ensure system is operational
-    wait_for_connection:
-      timeout: 900
-  - name: Gather facts for first time
-    setup:
 '''
 
 RETURN = r'''

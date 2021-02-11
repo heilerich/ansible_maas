@@ -122,7 +122,7 @@ class Host(object):
         inventory.add_host(self.name)
         
         for group in self.groups():
-            groupname = re.sub('[\.-]', '_', group)
+            groupname = re.sub('[\.\s-]', '_', group)
             inventory.add_group(groupname)
             inventory.add_host(self.name, groupname)
         

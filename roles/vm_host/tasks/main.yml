@@ -8,14 +8,17 @@
     user_data: "{{ machine_user_data | b64encode }}"
   register: deployment_result
 
-- name: Update IP addresses
-  set_fact:
-    ansible_host: "{{ deployment_result.machine.ip_addresses[0] }}"
-  when: "deployment_result.changed"
+- name: Give MAAS time to update it's data 
+  delegate_to: localhost
+  run_once: yes
+  ansible.builtin.wait_for:
+    timeout: 10
+
+- meta: refresh_inventory
 
 - name: SSH Keyscan
-  include_tasks: keyscan.yml
-  when: "update_ssh_host_key and deployment_result.changed"
+  import_tasks: keyscan.yml
+  tags: keyscan
 
 - name: Wait for host to become available
   ansible.builtin.wait_for_connection:
@@ -25,6 +28,7 @@
   setup:
 
 - name: Ensure LXD snap
+  become: yes
   community.general.snap:
     name: lxd
     state: present

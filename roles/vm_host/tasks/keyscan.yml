@@ -1,14 +1,20 @@
+- name: Targets to scan
+  debug:
+    msg: "{{ inventory_hostname }} {{ ansible_host }}"
+  when: "'keyscan' in ansible_run_tags or (update_ssh_host_key and deployment_result.changed)"
+
 - name: Scan host keys
   delegate_to: localhost
   ansible.builtin.command:
     cmd: "xargs -n1 ssh-keyscan 2> /dev/null"
     stdin: "{{ inventory_hostname }} {{ ansible_host }}"
+  when: "'keyscan' in ansible_run_tags or (update_ssh_host_key and deployment_result.changed)"
   register: keyscan_output
 
 - name: Register scanned keys as fact
   delegate_to: localhost
   ansible.builtin.set_fact:
-    host_keys: "{{ keyscan_output.stdout_lines }}"
+    host_keys: "{{ keyscan_output.stdout_lines|default([]) }}"
 
 - name: Gather all keys
   delegate_to: localhost

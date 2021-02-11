@@ -58,71 +58,25 @@ class ActionModule(ActionBase):
         config = AttrDict(
             check_mode = self._play_context.check_mode,
             system_id = self._task.args.get('system_id', None),
-            user_data = self._task.args.get('user_data', None),
-            distro_series = self._task.args.get('distro_series', None),
-            hwe_kernel = self._task.args.get('hwe_kernel', None),
-            comment = self._task.args.get('comment', None),
-            wait = self._task.args.get('wait', False),
+            acceptable_status = self._task.args.get('acceptable_status', []),
+            target = self._task.args.get('target', ''),
             wait_interval = int(self._task.args.get('wait_interval', 5)),
             wait_timeout = int(self._task.args.get('wait_timeout', 600)),
-            install_kvm = self._task.args.get('install_kvm', False),
             maas_url = self._task.args.get('maas_url', 'http://localhost:5240/MAAS/'),
+            api_version = self._task.args.get('api_version', '2.0'),
             api_key = self._task.args.get('api_key', None)
         )
 
         try:
             machine_endpoint = 'machines/%s/' % config.system_id
-            try:
-                session = APISession(config.maas_url, config.api_key)
-                machine_response = session.call('GET', machine_endpoint)
-                machine = machine_response.data
-                self.result['machine'] = machine_response.data
-                user_response = session.call('GET', 'users/?op=whoami')
-                self.user = user_response.data
-                if not machine_response.ok or not user_response.ok:
-                    return self._error('API call failed')
-            except APIError as e:
-                return self._error('Could not get the machine. The error was: %s' % to_native(e))
 
-            if machine['status'] != 4:
-                current_user = self.user['username']
-                if machine['status'] == 10:
-                    if machine['owner'] != current_user:
-                        return self._error('Machine is not allocated for current user (%s) but for user %s.' \
-                                           % (to_native(current_user), to_native(machine.owner.username)))
-                    else:
-                        pass
-                elif machine['status'] in [6, 9]:
-                    # Deployed or deploying
-                    return self.result
-                else:
-                    return self._error('Machine must be in ready or allocated state to be deployed. Current status is: %s' \
-                                       % to_native(machine['status_name']))
-
-            if config.check_mode:
-                self.result['changed'] = True
-                return self.result
-
-            deploy_response = session.call('POST', '%s?op=deploy' % machine_endpoint, dict(
-                user_data = config.user_data,
-                distro_series = config.distro_series,
-                hwe_kernel = config.hwe_kernel,
-                comment = config.comment,
-                install_kvm = config.install_kvm
-            ))
-
-            if not deploy_response.ok:
-                return self._error('Deployment API call returned error: %s' % deploy_response.data)
-
-            self.result['changed'] = True
-            self.result['machine'] = deploy_response.data
-
+            session = APISession(config.maas_url, config.api_key, config.api_version)
             poller = MachinePoller(config, session)
 
             error, data = poller.wait(config.system_id, 
-                                      target=6,
-                                      acceptable_status=(6,9),
-                                      numeric_status=True)
+                                      target=config.target, 
+                                      acceptable_status=config.acceptable_status,
+                                      numeric_status=False)
 
             if error is not None:
                 return self._error(error)
@@ -132,7 +86,7 @@ class ActionModule(ActionBase):
         except Exception as e:
             import traceback
             display.vvv(traceback.format_exc())
-            return self._error('An error occured while deploying machine: %s' % to_native(e))
+            return self._error('An error occured while waiting for machine: %s' % to_native(e))
         
         return self.result
 
