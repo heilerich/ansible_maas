@@ -43,7 +43,16 @@ class MachinePoller:
 
     def wait(self, system_id, target, acceptable_status, numeric_status=False):
         machine_endpoint = 'machines/%s/' % system_id
-        target = set(target)
+        try:
+            iterator = iter(target)
+        except TypeError: # not iterable
+            target = set([target])
+        else: # iterable
+            if isinstance(target, str):
+                target = set([target])
+            else:
+                target = set(target)
+
         acceptable_status = set(acceptable_status)
         acceptable_status = acceptable_status.union(target)
 
