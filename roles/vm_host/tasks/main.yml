@@ -27,12 +27,19 @@
 - name: Gather facts
   setup:
 
-- name: Ensure LXD snap
+- name: Install snap
   become: yes
-  community.general.snap:
-    name: lxd
-    state: present
-    channel: "{{ lxd_snap_channel }}"
+  ansible.builtin.command:
+    cmd: "snap install lxd --channel '{{ lxd_snap_channel }}'"
+  register: snap_install
+  changed_when: "'already installed' not in snap_install.stderr"
+- name: Refresh snap
+  become: yes
+  ansible.builtin.command:
+    cmd: "snap refresh lxd --channel '{{ lxd_snap_channel }}'"
+  register: snap_refresh
+  changed_when: "'has no updates' not in snap_refresh.stderr"
+  when: "not snap_install.changed"
 
 - name: Get current LXD configuration
   ansible.builtin.command:
