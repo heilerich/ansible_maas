@@ -43,8 +43,11 @@ class MachinePoller:
 
     def wait(self, system_id, target, acceptable_status, numeric_status=False):
         machine_endpoint = 'machines/%s/' % system_id
+        target = set(target)
         acceptable_status = set(acceptable_status)
-        acceptable_status.add(target)
+        acceptable_status = acceptable_status.union(target)
+
+        display.vvv('Target status: %s, acceptable status: %s' % (target, acceptable_status))
 
         def poll_machine():
             wait_response = self.session.call('GET', machine_endpoint)
@@ -57,7 +60,7 @@ class MachinePoller:
             data = wait_response.data
             if not wait_response.ok or not status in acceptable_status:
                return (True, 'Waiting for machine failed. Last status: %s' % status, data)
-            elif status == target:
+            elif status in target:
                return (True, None, data)
             elif status in acceptable_status:
                return (False, None, data)

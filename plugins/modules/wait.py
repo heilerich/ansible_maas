@@ -43,7 +43,7 @@ options:
         required: true
     target:
         description: The desired machine status (e.g. 'ready')
-        type: str
+        type: [str, list]
         required: true
     acceptable_status:
         description: "List of acceptable status (e.g. ['comissioning']). If the machine status changes to a status that is neither the target nor in acceptable_status the task will fail"
