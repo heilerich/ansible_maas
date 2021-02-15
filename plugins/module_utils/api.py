@@ -40,7 +40,10 @@ class APIError(Exception):
 
 class APISession():
     def __init__(self, maas_url, api_key, api_version = '2.0'):
-        client_key, token, token_secret = api_key.split(':')
+        try:
+            client_key, token, token_secret = api_key.split(':')
+        except Exception as e:
+            raise Exception('Invalid API Key: An exception was raised while parsing the MAAS API key (%s). The exception was: %s' % (api_key, e))
         self.session = OAuth1Session(client_key=client_key, 
                                      signature_method='PLAINTEXT',
                                      resource_owner_key=token,
