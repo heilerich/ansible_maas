@@ -43,9 +43,13 @@ DOCUMENTATION = '''
             required: true
             choices: [ maas_machines, heilerich.maas.maas_machines]
         include_vms:
-            description: If set to (no) only physical machnies will be returned
+            description: If set to I(no) only physical machnies will be returned
             type: bool
             default: yes
+        include_controllers:
+            description: If set to I(yes) region and rack controllers will be returned as well
+            type: bool
+            default: no
 '''
 
 EXAMPLES = '''
@@ -90,20 +94,22 @@ display = Display()
 
 class Host(object):
     @classmethod
-    def from_machine(cls, maas_machine):
+    def from_machine(cls, maas_machine, additional_groups=[]):
         data = dict(
             name = to_native(maas_machine['fqdn']),
-            status = to_native(maas_machine['status_name'].lower()),
             maas_id = to_native(maas_machine['system_id']),
             zone = 'zone_%s' % to_native(maas_machine['zone']['name']),
             domain = 'domain_%s' % to_native(maas_machine['domain']['name']),
-            pool = 'pool_%s' % to_native(maas_machine['pool']['name']),
             tags = [to_native(t) for t in maas_machine['tag_names']],
             maas_data = maas_machine
         )
+        data['pool'] = 'pool_%s' % to_native(maas_machine['pool']['name'] if 'pool' in maas_machine else '') 
+        data['status'] = to_native(maas_machine['status_name'].lower() if 'status_name' in maas_machine else '')
+
         data['metal'] = 'virtual' not in data['tags']
         data['host'] = to_native(maas_machine['ip_addresses'][0] if len(maas_machine['ip_addresses'])>0 else data['name'])
-
+        data['additional_groups'] = additional_groups
+        
         return cls(data)
     
     def __init__(self, data):
@@ -113,7 +119,7 @@ class Host(object):
         return self._data[name]
     
     def groups(self):
-        return ['metal' if self.metal else 'virtual', self.zone, self.domain, self.pool, self.status]
+        return [g for g in (['metal' if self.metal else 'virtual', self.zone, self.domain, self.pool, self.status] + self.additional_groups) if g != '']
     
     def attrs(self):
         return self.maas_data
@@ -143,7 +149,15 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         try:
             session = APISession(self._config.maas_url, self._config.api_key)
             machines = session.call('GET', 'machines/')
-            return [Host.from_machine(m) for m in machines.data]
+
+            region_controllers, rack_controllers = ([], [])
+            if self._config.include_controllers:
+                region_controllers = [Host.from_machine(m, ['controllers', 'region_controllers']) 
+                                    for m in session.call('GET', 'regioncontrollers/').data]
+                rack_controllers = [Host.from_machine(m, ['controllers', 'rack_controllers']) 
+                                    for m in session.call('GET', 'rackcontrollers/').data]
+                
+            return [Host.from_machine(m) for m in machines.data] + region_controllers + rack_controllers
         except Exception as e:
             raise AnsibleError('Unable to fetch data from the MAAS API, this was the original exception: %s' %
                                to_native(e))
@@ -191,6 +205,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             maas_url=self.get_option('maas_url'),
             api_key=self.get_option('api_key'),
             include_vms=self.get_option('include_vms'),
+            include_controllers=self.get_option('include_controllers'),
             debug=None,
         )
 
