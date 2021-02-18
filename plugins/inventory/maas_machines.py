@@ -50,6 +50,11 @@ DOCUMENTATION = '''
             description: If set to I(yes) region and rack controllers will be returned as well
             type: bool
             default: no
+        host:
+            description: This option controls how the I(ansible_host) variable is set
+            type: str
+            choices: [ ip, hostname, fqdn ]
+            default: ip
 '''
 
 EXAMPLES = '''
@@ -97,6 +102,7 @@ class Host(object):
     def from_machine(cls, maas_machine, additional_groups=[]):
         data = dict(
             name = to_native(maas_machine['fqdn']),
+            hostname = to_native(maas_machine['hostname']),
             maas_id = to_native(maas_machine['system_id']),
             zone = 'zone_%s' % to_native(maas_machine['zone']['name']),
             domain = 'domain_%s' % to_native(maas_machine['domain']['name']),
@@ -124,7 +130,7 @@ class Host(object):
     def attrs(self):
         return self.maas_data
     
-    def add_to_inventory(self, inventory):
+    def add_to_inventory(self, inventory, host='ip'):
         inventory.add_host(self.name)
         
         for group in self.groups():
@@ -132,8 +138,16 @@ class Host(object):
             inventory.add_group(groupname)
             inventory.add_host(self.name, groupname)
         
-        inventory.set_variable(self.name, 'ansible_host', self.host)
         inventory.set_variable(self.name, 'maas_id', self.maas_id)
+
+        if host == 'ip':
+            inventory.set_variable(self.name, 'ansible_host', self.host)
+        elif host == 'hostname':
+            inventory.set_variable(self.name, 'ansible_host', self.hostname)
+        elif host == 'fqdn':
+            inventory.set_variable(self.name, 'ansible_host', self.name)
+        else:
+            raise Exception('Invalid host option %s, valid choices are ip, hostname and fqdn')
 
 
 class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
@@ -172,7 +186,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 if not self._config.include_vms and 'virtual' in host.groups():
                     continue
 
-                host.add_to_inventory(self.inventory)
+                host.add_to_inventory(self.inventory, self._config.host)
 
                 strict = self.get_option('strict')
                 self._set_composite_vars(self.get_option('compose'),
@@ -206,6 +220,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             api_key=self.get_option('api_key'),
             include_vms=self.get_option('include_vms'),
             include_controllers=self.get_option('include_controllers'),
+            host=self.get_option('host'),
             debug=None,
         )
 
