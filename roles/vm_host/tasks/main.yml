@@ -19,6 +19,7 @@
 - name: SSH Keyscan
   import_tasks: keyscan.yml
   tags: keyscan
+  when: "hostvars|map(attribute='update_ssh_host_key') is any"
 
 - name: Wait for host to become available
   ansible.builtin.wait_for_connection:
