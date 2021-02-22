@@ -13,13 +13,14 @@
   run_once: yes
   ansible.builtin.wait_for:
     timeout: 10
+  when: deployment_result.changed
 
 - meta: refresh_inventory
 
 - name: SSH Keyscan
   import_tasks: keyscan.yml
   tags: keyscan
-  when: "hostvars|map(attribute='update_ssh_host_key') is any"
+  when: "hostvars|dict2items|selectattr('key', 'in', ansible_play_hosts)|map(attribute='value')|map(attribute='update_ssh_host_key')|select('defined') is any"
 
 - name: Wait for host to become available
   ansible.builtin.wait_for_connection:
