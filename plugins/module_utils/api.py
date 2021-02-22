@@ -29,7 +29,8 @@ from requests_oauthlib import OAuth1Session
 from six.moves import urllib
 from ansible.utils.display import Display
 from ansible.module_utils._text import to_native
-
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 display = Display()
 urlparse, urljoin = urllib.parse.urlparse, urllib.parse.urljoin
@@ -48,6 +49,10 @@ class APISession():
                                      signature_method='PLAINTEXT',
                                      resource_owner_key=token,
                                      resource_owner_secret=token_secret)
+        retry_strategy = Retry(total=5,backoff_factor=2)
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.base_url = urljoin(maas_url, '../')
         self.api_base = urljoin(self.base_url, '/MAAS/api/%s/' % api_version)
         self.headers = {'Accept': 'application/json'}
@@ -61,22 +66,11 @@ class APISession():
             return text
 
     def call(self, method, endpoint, params={}):
-        if method == 'GET':
-            http = self.session.get
-        elif method == 'POST':
-            http = self.session.post
-        elif method == 'PUT':
-            http = self.session.put
-        elif method == 'DELETE':
-            http = self.session.delete
-        else:
-            raise APIError('Invalid method: %s' % method)
-
         try:
             url = urljoin(self.api_base, endpoint)
             # MAAS expects multipart/form-data and doesn't like filenames
             file_params = {k: ('', v) for k, v in params.items()}
-            resp = http(url, files=file_params, headers=self.headers)
+            resp = self.session.request(method, url, files=file_params, headers=self.headers)
             display.vvvv('Called %s: (%s) %s' % (endpoint, resp.status_code, resp.content))
             resp.data = self.decode(resp)
             return resp
