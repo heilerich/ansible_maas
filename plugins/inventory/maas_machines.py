@@ -112,7 +112,7 @@ class Host(object):
         data['pool'] = 'pool_%s' % to_native(maas_machine['pool']['name'] if 'pool' in maas_machine else '') 
         data['status'] = to_native(maas_machine['status_name'].lower() if 'status_name' in maas_machine else '')
 
-        data['metal'] = 'virtual' not in data['tags']
+        data['metal'] = 'controllers' not in additional_groups and maas_machine['pod'] is None
         data['host'] = to_native(maas_machine['ip_addresses'][0] if len(maas_machine['ip_addresses'])>0 else data['name'])
         data['additional_groups'] = additional_groups
         
@@ -171,7 +171,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 rack_controllers = [Host.from_machine(m, ['controllers', 'rack_controllers']) 
                                     for m in session.call('GET', 'rackcontrollers/').data]
                 
-            return [Host.from_machine(m) for m in machines.data] + region_controllers + rack_controllers
+            return [Host.from_machine(m, ['machines']) for m in machines.data] + region_controllers + rack_controllers
         except Exception as e:
             raise AnsibleError('Unable to fetch data from the MAAS API, this was the original exception: %s' %
                                to_native(e))
