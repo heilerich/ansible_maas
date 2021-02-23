@@ -12,8 +12,8 @@
   delegate_to: localhost
   run_once: yes
   ansible.builtin.wait_for:
-    timeout: 10
-  when: deployment_result.changed
+    timeout: 20
+  when: "hostvars|dict2items|selectattr('key', 'in', ansible_play_hosts)|map(attribute='value')|map(attribute='deployment_result')|map(attribute='changed')|select('defined') is any"
 
 - meta: refresh_inventory
 
